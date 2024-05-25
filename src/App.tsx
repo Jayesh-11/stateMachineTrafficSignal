@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
@@ -6,7 +6,7 @@ import './App.css'
 const createMachine = (stateMachineDefinition: any) => {
   const machine = {
     value: stateMachineDefinition.initialValue,
-    transition: (currentState, event) => {
+    transition: (currentState: string, event: string) => {
       const currentStateDefinition = stateMachineDefinition[currentState];
       const destinationTransiton = currentStateDefinition.transitions[event];
       if (!destinationTransiton) return;
@@ -25,8 +25,22 @@ const createMachine = (stateMachineDefinition: any) => {
 }
 
 const useTrafficSignalStateMachine = (initialValue) => {
-  const machine = createMachine({
-    initialValue,
+  const machine = useMemo(() => createMachine(initialValue), [])
+  const [signal, setSignal] = useState(machine.value);
+  const signalSetter = () => {
+    console.log('before transition', machine, signal)
+    machine.transition(signal, 'switch')
+    setSignal(machine.value)
+
+    console.log('after transition', machine, signal)
+  }
+  return { signal, signalSetter }
+
+}
+
+function App() {
+  const { signal, signalSetter } = useTrafficSignalStateMachine({
+    initialValue: 'red',
     green: {
       actions: {
         onEnter: () => { },
@@ -63,18 +77,7 @@ const useTrafficSignalStateMachine = (initialValue) => {
         }
       }
     }
-  })
-
-  const [signal, setSignal] = useState(machine.value);
-  const signalSetter = () => {
-    setSignal(machine.transition(signal, 'switch'))
-  }
-  return { signal, signalSetter }
-
-}
-
-function App() {
-  const { signal, signalSetter } = useTrafficSignalStateMachine('red');
+  });
   return (
     <>
       <div>
